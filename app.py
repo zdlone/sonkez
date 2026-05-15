@@ -1,36 +1,31 @@
 import os
-from flask import Flask, redirect, request
+from flask import Flask, redirect
 import requests
-import re
 
 app = Flask(__name__)
 
-def link_kaziyici(url):
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
-    }
-    try:
-        response = requests.get(url, headers=headers, timeout=15)
-        # YouTube'un yeni m3u8 formatını yakalar
-        match = re.search(r'hlsManifestUrl":"([^"]+)"', response.text)
-        if match:
-            return match.group(1).replace(r'\/', '/')
-    except:
-        return None
-    return None
-
 @app.route('/live.m3u8')
 def youtube_yayin():
-    # TEST İÇİN DEĞİŞTİRDİM: TRT HABER CANLI (YouTube'un en stabil yayınıdır)
-    # Eğer bu çalışırsa, kendi linkinle değiştirirsin.
-    varsayilan_url = "https://www.youtube.com/watch?v=9uVpT7NidS0"
+    # TRT HABER Video ID: 9uVpT7NidS0
+    # Bu yöntem, YouTube'un video ID'sini kullanarak doğrudan API üzerinden link oluşturur
+    video_id = "9uVpT7NidS0" 
     
-    link = link_kaziyici(varsayilan_url)
+    # YouTube linklerini çözen ücretsiz ve sağlam bir dış servis (API) kullanıyoruz
+    # Bu sayede Render'ın IP engeline takılmayız.
+    api_url = f"https://youtube-hls-service.vercel.app/api/get-hls?id={video_id}"
     
-    if link:
-        return redirect(link)
+    try:
+        # Dış servisten m3u8 linkini çekiyoruz
+        r = requests.get(api_url, timeout=10)
+        if r.status_code == 200:
+            m3u8_link = r.json().get('url')
+            if m3u8_link:
+                return redirect(m3u8_link)
+    except:
+        pass
     
-    return "Sistem Calisiyor Ama YouTube Linki Vermiyor. Lutfen Farkli Bir Kanal Deneyin.", 404
+    # Alternatif 2: Eğer API çalışmazsa doğrudan yönlendirme dene
+    return redirect(f"https://www.youtube.com/watch?v={video_id}")
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
