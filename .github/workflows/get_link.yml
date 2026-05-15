@@ -1,0 +1,26 @@
+name: Get YouTube Link
+on:
+  schedule:
+    - cron: '*/30 * * * *' # Her 30 dakikada bir yeniler
+  workflow_dispatch: # Manuel çalıştırma butonu ekler
+
+jobs:
+  update-link:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Install yt-dlp
+        run: |
+          sudo curl -L https://github.com/yt-dlp/yt-dlp/releases/latest/download/yt-dlp -o /usr/local/bin/yt-dlp
+          sudo chmod a+rx /usr/local/bin/yt-dlp
+      - name: Get Link
+        run: |
+          # beIN SPORTS HABER ID: i7UpPgxfZZ8
+          yt-dlp -g https://www.youtube.com/watch?v=i7UpPgxfZZ8 > link.txt
+      - name: Commit and Push
+        run: |
+          git config --global user.name 'GitHub Action'
+          git config --global user.email 'action@github.com'
+          git add link.txt
+          git commit -m "Update live link" || exit 0
+          git push
