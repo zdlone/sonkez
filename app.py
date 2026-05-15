@@ -5,37 +5,32 @@ import re
 
 app = Flask(__name__)
 
-def youtube_m3u8_bul(url):
+def link_kaziyici(url):
     headers = {
-        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
     }
     try:
-        # YouTube sayfasını iPhone gibi çekiyoruz (daha az korumalıdır)
         response = requests.get(url, headers=headers, timeout=15)
-        # Sayfa içindeki m3u8 linkini arıyoruz
-        match = re.search(r'hlsManifestUrl":"(https:[^"]+)"', response.text)
+        # YouTube'un yeni m3u8 formatını yakalar
+        match = re.search(r'hlsManifestUrl":"([^"]+)"', response.text)
         if match:
-            m3u8_url = match.group(1).replace(r'\/', '/')
-            return m3u8_url
-    except Exception as e:
-        print(f"Hata: {e}")
+            return match.group(1).replace(r'\/', '/')
+    except:
+        return None
     return None
 
 @app.route('/live.m3u8')
 def youtube_yayin():
-    # TEST: Bu linkin canlı olduğundan emin ol (Kral FM Canlı Yayın örneği)
-    hedef_yt_url = "https://www.youtube.com/watch?v=Jv8HS8gqV78" 
+    # TEST İÇİN DEĞİŞTİRDİM: TRT HABER CANLI (YouTube'un en stabil yayınıdır)
+    # Eğer bu çalışırsa, kendi linkinle değiştirirsin.
+    varsayilan_url = "https://www.youtube.com/watch?v=9uVpT7NidS0"
     
-    # Eğer linki tarayıcıdan göndermek istersen: /live.m3u8?url=YOUTUBE_LINKI
-    user_url = request.args.get('url')
-    final_url = user_url if user_url else hedef_yt_url
-    
-    link = youtube_m3u8_bul(final_url)
+    link = link_kaziyici(varsayilan_url)
     
     if link:
         return redirect(link)
     
-    return "YouTube hala engel koyuyor. Başka bir kanal linki deneyin veya 5 dk bekleyin.", 404
+    return "Sistem Calisiyor Ama YouTube Linki Vermiyor. Lutfen Farkli Bir Kanal Deneyin.", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
