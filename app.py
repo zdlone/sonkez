@@ -1,31 +1,40 @@
 import os
 from flask import Flask, redirect
-import requests
+import yt_dlp
 
 app = Flask(__name__)
 
+def link_bul(video_url):
+    # YouTube'un engellememesi için gelişmiş ayarlar
+    ydl_opts = {
+        'format': 'best',
+        'quiet': True,
+        'no_warnings': True,
+        # YouTube'un botları anlamaması için rastgele tarayıcı bilgisi
+        'user_agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
+    }
+    try:
+        with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+            # Senin attığın linki burada işliyoruz
+            info = ydl.extract_info(video_url, download=False)
+            if 'url' in info:
+                return info['url']
+    except Exception as e:
+        print(f"Hata: {e}")
+        return None
+
 @app.route('/live.m3u8')
 def youtube_yayin():
-    # TRT HABER Video ID: 9uVpT7NidS0
-    # Bu yöntem, YouTube'un video ID'sini kullanarak doğrudan API üzerinden link oluşturur
-    video_id = "9uVpT7NidS0" 
+    # BURAYA SANA AİT YOUTUBE LİNKİNİ YAPIŞTIR
+    senin_linkin = "https://www.youtube.com/watch?v=Jv8HS8gqV78" 
     
-    # YouTube linklerini çözen ücretsiz ve sağlam bir dış servis (API) kullanıyoruz
-    # Bu sayede Render'ın IP engeline takılmayız.
-    api_url = f"https://youtube-hls-service.vercel.app/api/get-hls?id={video_id}"
+    taze_link = link_bul(senin_linkin)
     
-    try:
-        # Dış servisten m3u8 linkini çekiyoruz
-        r = requests.get(api_url, timeout=10)
-        if r.status_code == 200:
-            m3u8_link = r.json().get('url')
-            if m3u8_link:
-                return redirect(m3u8_link)
-    except:
-        pass
+    if taze_link:
+        # Sunucu taze linki buldu, şimdi kullanıcıyı oraya gönderiyor
+        return redirect(taze_link)
     
-    # Alternatif 2: Eğer API çalışmazsa doğrudan yönlendirme dene
-    return redirect(f"https://www.youtube.com/watch?v={video_id}")
+    return "Link su an yakalanamadi, YouTube engeli olabilir.", 404
 
 if __name__ == '__main__':
     port = int(os.environ.get("PORT", 5000))
